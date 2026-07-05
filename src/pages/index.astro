@@ -1,0 +1,115 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PostCard from '../components/PostCard.astro';
+import VoteScript from '../components/VoteScript.astro';
+import Logo from '../components/Logo.astro';
+import { listPosts, communityStats, nextEvent } from '../lib/db';
+import { TAG_NAMES, eventDay } from '../lib/ui';
+
+const db = Astro.locals.runtime.env.DB;
+const user = Astro.locals.user;
+
+const tag = Astro.url.searchParams.get('tag');
+const q = Astro.url.searchParams.get('q');
+const composeOpen = Astro.url.searchParams.get('compose') === '1';
+const activeTag = tag && (TAG_NAMES as readonly string[]).includes(tag) ? tag : null;
+
+const [posts, stats, upcoming] = await Promise.all([
+  listPosts(db, { viewerId: user?.id, tag: activeTag, q }),
+  communityStats(db),
+  nextEvent(db),
+]);
+const upcomingDate = upcoming ? eventDay(upcoming.starts_at) : null;
+
+const filterHref = (name: string | null) => {
+  const params = new URLSearchParams();
+  if (name) params.set('tag', name);
+  if (q) params.set('q', q);
+  const s = params.toString();
+  return s ? `/?${s}` : '/';
+};
+---
+<Layout active="feed">
+  <main class="page feed-layout">
+    <section class="feed-main">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href={filterHref(null)} class:list={['filter-chip', { 'filter-chip--active': !activeTag }]}>All</a>
+        {TAG_NAMES.map((name) => (
+          <a href={filterHref(name)} class:list={['filter-chip', { 'filter-chip--active': activeTag === name }]}>{name}</a>
+        ))}
+      </div>
+
+      {q && (
+        <p style="margin:0;color:var(--muted);font-size:14px;font-weight:600">
+          Results for “{q}” · <a href="/" style="color:var(--accent)">clear</a>
+        </p>
+      )}
+
+      {user && !user.blocked && (
+        <details class="composer" id="composer" open={composeOpen}>
+          <summary class="composer-collapsed">Share something with the community…</summary>
+          <form class="composer__form" method="post" action="/api/posts">
+            <input class="composer__title" name="title" placeholder="Post title" required maxlength="200" />
+            <textarea
+              class="composer__body"
+              name="body"
+              rows="3"
+              maxlength="10000"
+              placeholder="Tell us more — what did you build, what blocked you, what did you discover?"
+            ></textarea>
+            <div class="composer__actions">
+              <select class="composer__tag-select" name="tag">
+                {TAG_NAMES.map((name) => <option value={name}>{name}</option>)}
+              </select>
+              <a href="/" class="btn btn--ghost" style="padding:8px 16px">Cancel</a>
+              <button type="submit" class="btn btn--dark" style="padding:8px 20px">Publish</button>
+            </div>
+          </form>
+        </details>
+      )}
+
+      {posts.map((post) => <PostCard post={post} />)}
+      {posts.length === 0 && (
+        <div class="card" style="padding:28px;text-align:center;color:var(--faint);font-weight:600">
+          Nothing here yet — be the first to post!
+        </div>
+      )}
+    </section>
+
+    <aside class="feed-aside">
+      <div class="about-card">
+        <div class="about-card__bg"></div>
+        <div class="about-card__content">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <Logo size={22} />
+            <span style="font-weight:800;font-size:16px;letter-spacing:-0.01em">VibeShip</span>
+          </div>
+          <p>The home of vibe coders worldwide. Share projects, ask questions, learn and ship together.</p>
+          <div class="about-card__stats">
+            <div><b>{stats.members.toLocaleString('en-US')}</b><br />members</div>
+            <div><b>{stats.topics.toLocaleString('en-US')}</b><br />topics</div>
+            <div><b>{stats.comments.toLocaleString('en-US')}</b><br />comments</div>
+          </div>
+        </div>
+      </div>
+
+      {upcoming && upcomingDate && (
+        <div class="card next-event-card">
+          <div class="next-event-card__label">NEXT EVENT</div>
+          <div style="display:flex;gap:14px;align-items:center">
+            <div class="date-badge">
+              <div class="date-badge__day">{upcomingDate.day}</div>
+              <div class="date-badge__month">{upcomingDate.month}</div>
+            </div>
+            <div>
+              <div style="font-weight:800;font-size:15px;line-height:1.3">{upcoming.title}</div>
+              <div style="font-size:13px;color:var(--muted)">{upcoming.location}</div>
+            </div>
+          </div>
+          <a href="/events" class="btn btn--outline btn--block" style="margin-top:14px;padding:9px;font-size:13px">See all events</a>
+        </div>
+      )}
+    </aside>
+  </main>
+  <VoteScript />
+</Layout>

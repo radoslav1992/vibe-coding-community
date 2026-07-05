@@ -1,0 +1,81 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Tag from '../../components/Tag.astro';
+import VoteScript from '../../components/VoteScript.astro';
+import { getPost, listComments } from '../../lib/db';
+import { timeAgo, initials, avatarGradient } from '../../lib/ui';
+
+const db = Astro.locals.runtime.env.DB;
+const user = Astro.locals.user;
+
+const id = Number(Astro.params.id);
+if (!Number.isInteger(id) || id < 1) return Astro.redirect('/');
+
+const post = await getPost(db, id, user?.id);
+if (!post) return Astro.redirect('/');
+
+const comments = await listComments(db, id);
+---
+<Layout active="feed" title={`${post.title} · VibeShip`}>
+  <main class="page page--narrow stack">
+    <a href="/" class="back-link">← Back to the feed</a>
+
+    <article class="card thread-card">
+      <div style="margin-bottom:10px"><Tag name={post.tag} /></div>
+      <h1 class="thread-title">{post.title}</h1>
+      <div class="thread-meta">
+        <span style="color:#444">{post.author_name}</span>
+        <span>{timeAgo(post.created_at)}</span>
+      </div>
+      <p class="thread-body">{post.body}</p>
+      <div style="display:flex;gap:10px;margin-top:20px;align-items:center">
+        <button
+          type="button"
+          class:list={['vote-chip', 'js-vote', { 'vote-chip--on': post.voted }]}
+          data-post-id={post.id}
+        >▲ {post.votes}</button>
+        <span style="font-size:13px;color:var(--faint);font-weight:600">
+          {post.comment_count} {post.comment_count === 1 ? 'comment' : 'comments'}
+        </span>
+        {user && (
+          <form method="post" action={`/api/posts/${post.id}/report`} style="margin-left:auto">
+            <button type="submit" class="btn btn--ghost btn-sm" title="Report this post to the moderators">⚑ Report</button>
+          </form>
+        )}
+      </div>
+    </article>
+
+    <h2 style="margin:8px 0 0;font-size:16px;font-weight:800;color:#444">Comments</h2>
+
+    {comments.map((c, i) => (
+      <div class="card comment-card">
+        <div class="avatar avatar--sm" style={`background:${avatarGradient(c.user_id ?? i)}`}>{initials(c.author_name)}</div>
+        <div>
+          <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:4px">
+            <span style="font-weight:800;font-size:14px">{c.author_name}</span>
+            <span style="font-size:12px;color:var(--faint);font-weight:600">{timeAgo(c.created_at)}</span>
+          </div>
+          <p>{c.body}</p>
+        </div>
+      </div>
+    ))}
+    {comments.length === 0 && (
+      <div class="card" style="padding:20px;color:var(--faint);font-weight:600;font-size:14px">
+        No comments yet — start the conversation.
+      </div>
+    )}
+
+    {user && !user.blocked && (
+      <form class="card reply-bar" method="post" action={`/api/posts/${post.id}/comment`}>
+        <input name="body" placeholder="Add a comment…" required maxlength="5000" autocomplete="off" />
+        <button type="submit" class="btn btn--dark" style="padding:9px 18px">Send</button>
+      </form>
+    )}
+    {!user && (
+      <div class="guest-note">
+        <a href="/auth">Sign in</a> to join the discussion.
+      </div>
+    )}
+  </main>
+  <VoteScript />
+</Layout>

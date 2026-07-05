@@ -1,0 +1,31 @@
+<script>
+  // Upvote toggling for feed cards and thread page.
+  document.addEventListener('click', async (e) => {
+    const btn = e.target instanceof Element ? e.target.closest<HTMLElement>('.js-vote') : null;
+    if (!btn) return;
+    const postId = btn.dataset.postId;
+    if (!postId) return;
+    btn.setAttribute('disabled', '');
+    try {
+      const res = await fetch(`/api/posts/${postId}/vote`, { method: 'POST' });
+      if (res.status === 401) {
+        location.href = '/auth';
+        return;
+      }
+      if (!res.ok) return;
+      const data = (await res.json()) as { votes: number; voted: boolean };
+      document.querySelectorAll(`.js-vote-count[data-post-id="${postId}"]`).forEach((el) => {
+        el.textContent = String(data.votes);
+      });
+      document.querySelectorAll(`.js-vote[data-post-id="${postId}"]`).forEach((el) => {
+        el.classList.toggle('vote-btn--on', data.voted);
+        el.classList.toggle('vote-chip--on', data.voted && el.classList.contains('vote-chip'));
+        if (el.classList.contains('vote-chip')) {
+          el.textContent = `▲ ${data.votes}`;
+        }
+      });
+    } finally {
+      btn.removeAttribute('disabled');
+    }
+  });
+</script>

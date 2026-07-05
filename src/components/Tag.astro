@@ -1,0 +1,10 @@
+---
+import { TAG_COLORS } from '../lib/ui';
+
+interface Props {
+  name: string;
+}
+const { name } = Astro.props;
+const c = TAG_COLORS[name] ?? TAG_COLORS['Discussion']!;
+---
+<span class="tag" style={`background:${c.bg};color:${c.fg}`}>{name}</span>

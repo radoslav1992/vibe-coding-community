@@ -1,0 +1,43 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { longDate } from '../lib/ui';
+
+interface NewsRow {
+  id: number;
+  title: string;
+  body: string;
+  featured: number;
+  published_at: number;
+}
+
+const db = Astro.locals.runtime.env.DB;
+const { results: items } = await db
+  .prepare('SELECT * FROM news ORDER BY published_at DESC LIMIT 30')
+  .all<NewsRow>();
+---
+<Layout active="news" title="News · VibeShip">
+  <main class="page page--medium">
+    <h1 class="page-title">News</h1>
+    <p class="page-subtitle">What's new in the world of vibe coding — curated for the community.</p>
+    <div class="stack">
+      {items.map((n) =>
+        n.featured ? (
+          <article class="news-hero">
+            <div class="news-hero__bg"></div>
+            <div class="news-hero__content">
+              <div class="news-date" style="opacity:0.85">{longDate(n.published_at)} · FEATURED</div>
+              <h3 style="margin:0 0 8px;font-size:24px;font-weight:900;letter-spacing:-0.01em">{n.title}</h3>
+              <p style="margin:0;font-size:15px;line-height:1.55;max-width:560px">{n.body}</p>
+            </div>
+          </article>
+        ) : (
+          <article class="card news-card">
+            <div class="news-date" style="color:var(--faint)">{longDate(n.published_at)}</div>
+            <h3>{n.title}</h3>
+            <p>{n.body}</p>
+          </article>
+        )
+      )}
+    </div>
+  </main>
+</Layout>
