@@ -7,5 +7,5 @@ export default defineConfig({
   adapter: cloudflare({
     platformProxy: { enabled: true },
   }),
-  site: 'https://vibeship.dev',
+  site: 'https://vibeshipyard.com',
 });

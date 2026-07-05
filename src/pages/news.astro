@@ -15,7 +15,7 @@ const { results: items } = await db
   .prepare('SELECT * FROM news ORDER BY published_at DESC LIMIT 30')
   .all<NewsRow>();
 ---
-<Layout active="news" title="News · VibeShip">
+<Layout active="news" title="News · VibeShipyard">
   <main class="page page--medium">
     <h1 class="page-title">News</h1>
     <p class="page-subtitle">What's new in the world of vibe coding — curated for the community.</p>

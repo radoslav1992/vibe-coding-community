@@ -8,7 +8,7 @@ interface Props {
   active?: 'feed' | 'events' | 'news' | 'learn' | 'none';
 }
 
-const { title = 'VibeShip · The global vibe coding community', active = 'none' } = Astro.props;
+const { title = 'VibeShipyard · The global vibe coding community', active = 'none' } = Astro.props;
 const user = Astro.locals.user;
 const q = Astro.url.searchParams.get('q') ?? '';
 
@@ -25,7 +25,7 @@ const navTabs = [
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="description" content="VibeShip — the global vibe coding community. Share projects, ask questions, learn and ship together." />
+    <meta name="description" content="VibeShipyard — the global vibe coding community. Share projects, ask questions, learn and ship together." />
     <title>{title}</title>
   </head>
   <body>
@@ -34,8 +34,8 @@ const navTabs = [
         <a href="/" class="brand">
           <Logo size={32} />
           <span class="brand__text">
-            <span class="brand__name">VibeShip</span>
-            <span class="brand__domain">VIBESHIP.DEV</span>
+            <span class="brand__name">VibeShipyard</span>
+            <span class="brand__domain">VIBESHIPYARD.COM</span>
           </span>
         </a>
         <nav class="site-nav">
@@ -78,7 +78,7 @@ const navTabs = [
 
     <footer class="site-footer">
       <Logo size={16} />
-      <span>© 2026 VibeShip · vibeship.dev</span>
+      <span>© 2026 VibeShipyard · vibeshipyard.com</span>
       <span class="flex-spacer"></span>
       <span>An independent community, run by volunteers</span>
     </footer>

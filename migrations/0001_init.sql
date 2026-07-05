@@ -1,4 +1,4 @@
--- VibeShip · initial schema
+-- VibeShipyard · initial schema
 
 CREATE TABLE users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

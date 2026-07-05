@@ -36,7 +36,7 @@ const points = (stats?.votes_received ?? 0) * 5 + (stats?.posts ?? 0) * 10 + (st
 const memberSince = new Date(user.created_at * 1000).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 const roleLabel = user.role === 'admin' ? 'Admin' : user.role === 'moderator' ? 'Moderator' : null;
 ---
-<Layout active="none" title={`${user.name} · VibeShip`}>
+<Layout active="none" title={`${user.name} · VibeShipyard`}>
   <main class="page page--narrow stack">
     <div class="card profile-card">
       <div class="avatar avatar--lg" style={`background:${avatarGradient(user.id)}`}>{initials(user.name)}</div>

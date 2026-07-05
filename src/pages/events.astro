@@ -7,7 +7,7 @@ const db = Astro.locals.runtime.env.DB;
 const user = Astro.locals.user;
 const events = await listEvents(db, user?.id);
 ---
-<Layout active="events" title="Events · VibeShip">
+<Layout active="events" title="Events · VibeShipyard">
   <main class="page page--medium">
     <h1 class="page-title">Events</h1>
     <p class="page-subtitle">Meetups, workshops and hackathons of the global vibe coding community.</p>

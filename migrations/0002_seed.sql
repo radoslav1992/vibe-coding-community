@@ -1,4 +1,4 @@
--- VibeShip · seed content
+-- VibeShipyard · seed content
 -- Seed members have an unusable password hash ('!') — they exist to make the
 -- community feel alive. Register a real account to participate; the first
 -- registered account becomes the admin.
@@ -56,11 +56,11 @@ INSERT INTO votes (post_id, user_id) VALUES
   (6, 2), (6, 3), (6, 5);
 
 INSERT INTO events (id, title, starts_at, location, kind, description) VALUES
-  (1, 'VibeShip Community Call · July', unixepoch('2026-07-15 17:00'), 'Zoom · 17:00 – 19:00 UTC', 'online',
+  (1, 'VibeShipyard Community Call · July', unixepoch('2026-07-15 17:00'), 'Zoom · 17:00 – 19:00 UTC', 'online',
    'Project demos from the community, networking, and a discussion: "How I sold my first SaaS built by vibe coding".'),
   (2, 'Workshop: From idea to MVP in one weekend', unixepoch('2026-07-22 18:00'), 'Zoom · 18:00 – 19:30 UTC', 'online',
    'Hands-on session: structuring prompts, connecting a database, and going live.'),
-  (3, 'VibeShip Hackathon · Ship Weekend', unixepoch('2026-09-05 09:00'), 'Online + local hubs worldwide · all day', 'in_person',
+  (3, 'VibeShipyard Hackathon · Ship Weekend', unixepoch('2026-09-05 09:00'), 'Online + local hubs worldwide · all day', 'in_person',
    '24 hours of building in teams across time zones. The jury awards the most useful product shipped by a first-time builder.');
 
 INSERT INTO news (title, body, featured, published_at) VALUES
