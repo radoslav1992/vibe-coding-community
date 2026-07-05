@@ -1,0 +1,95 @@
+---
+import Logo from '../components/Logo.astro';
+import { initials, avatarGradient } from '../lib/ui';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  active?: 'feed' | 'events' | 'news' | 'learn' | 'none';
+}
+
+const { title = 'VibeShip · The global vibe coding community', active = 'none' } = Astro.props;
+const user = Astro.locals.user;
+const q = Astro.url.searchParams.get('q') ?? '';
+
+const navTabs = [
+  { key: 'feed', label: 'Home', href: '/' },
+  { key: 'events', label: 'Events', href: '/events' },
+  { key: 'news', label: 'News', href: '/news' },
+  { key: 'learn', label: 'Learn', href: '/learn' },
+];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content="VibeShip — the global vibe coding community. Share projects, ask questions, learn and ship together." />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <a href="/" class="brand">
+          <Logo size={32} />
+          <span class="brand__text">
+            <span class="brand__name">VibeShip</span>
+            <span class="brand__domain">VIBESHIP.DEV</span>
+          </span>
+        </a>
+        <nav class="site-nav">
+          {navTabs.map((tab) => (
+            <a href={tab.href} class:list={['site-nav__tab', { 'site-nav__tab--active': active === tab.key }]}>{tab.label}</a>
+          ))}
+        </nav>
+        <div class="flex-spacer"></div>
+        <form action="/" method="get" style="display:contents">
+          <input class="header-search" type="search" name="q" value={q} placeholder="Search the community…" />
+        </form>
+        {!user && <a href="/auth" class="btn btn--dark">Sign in</a>}
+        {user && (
+          <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+            <a href="/?compose=1#composer" class="btn btn--dark" style="padding:9px 16px">+ New post</a>
+            <details class="user-menu">
+              <summary
+                class="avatar avatar--md"
+                style={`background:${avatarGradient(user.id)}`}
+                title={user.name}
+              >{initials(user.name)}</summary>
+              <div class="user-menu__panel">
+                <a href="/profile" class="user-menu__item">Profile</a>
+                <a href="/settings" class="user-menu__item">Settings</a>
+                {(user.role === 'admin' || user.role === 'moderator') && (
+                  <a href="/admin" class="user-menu__item">Admin panel</a>
+                )}
+                <div class="user-menu__divider"></div>
+                <form method="post" action="/api/auth/logout">
+                  <button type="submit" class="user-menu__item user-menu__item--danger">Sign out</button>
+                </form>
+              </div>
+            </details>
+          </div>
+        )}
+      </div>
+    </header>
+
+    <slot />
+
+    <footer class="site-footer">
+      <Logo size={16} />
+      <span>© 2026 VibeShip · vibeship.dev</span>
+      <span class="flex-spacer"></span>
+      <span>An independent community, run by volunteers</span>
+    </footer>
+
+    <script>
+      // Close the user-menu dropdown when clicking outside of it.
+      document.addEventListener('click', (e) => {
+        document.querySelectorAll('details.user-menu[open]').forEach((menu) => {
+          if (e.target instanceof Node && !menu.contains(e.target)) menu.removeAttribute('open');
+        });
+      });
+    </script>
+  </body>
+</html>

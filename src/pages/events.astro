@@ -1,0 +1,48 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { listEvents } from '../lib/db';
+import { eventDay } from '../lib/ui';
+
+const db = Astro.locals.runtime.env.DB;
+const user = Astro.locals.user;
+const events = await listEvents(db, user?.id);
+---
+<Layout active="events" title="Events · VibeShip">
+  <main class="page page--medium">
+    <h1 class="page-title">Events</h1>
+    <p class="page-subtitle">Meetups, workshops and hackathons of the global vibe coding community.</p>
+    <div class="stack">
+      {events.map((ev) => {
+        const d = eventDay(ev.starts_at);
+        return (
+          <div class="card event-card">
+            <div class="date-badge date-badge--lg">
+              <div class="date-badge__day">{d.day}</div>
+              <div class="date-badge__month">{d.month}</div>
+            </div>
+            <div style="flex:1;min-width:240px">
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+                <h3 class="event-card__title">{ev.title}</h3>
+                <span class:list={['tag', ev.kind === 'in_person' ? 'badge--live' : 'badge--online']}>
+                  {ev.kind === 'in_person' ? 'IN PERSON' : 'ONLINE'}
+                </span>
+              </div>
+              <div class="event-card__place">{ev.kind === 'in_person' ? '📍' : '💻'} {ev.location}</div>
+              <p class="event-card__desc">{ev.description}</p>
+            </div>
+            <form method="post" action={`/api/events/${ev.id}/rsvp`}>
+              <button type="submit" class:list={['btn', ev.going ? 'btn--accent' : 'btn--outline']} style="padding:10px 20px">
+                {ev.going ? '✓ Going' : 'Count me in'}
+              </button>
+            </form>
+          </div>
+        );
+      })}
+      {events.length === 0 && (
+        <div class="card" style="padding:28px;text-align:center;color:var(--faint);font-weight:600">
+          No events scheduled right now — check back soon.
+        </div>
+      )}
+    </div>
+  </main>
+</Layout>

@@ -1,0 +1,28 @@
+---
+// VibeShip logomark — a gradient sail, original artwork for the rebrand.
+interface Props {
+  size?: number;
+}
+const { size = 32 } = Astro.props;
+---
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 64 64"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  aria-hidden="true"
+  style="flex-shrink:0"
+>
+  <defs>
+    <linearGradient id="vs-grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF6D1B"></stop>
+      <stop offset="0.5" stop-color="#FF0178"></stop>
+      <stop offset="1" stop-color="#4B73FF"></stop>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#vs-grad)"></rect>
+  <path d="M33 10v28H13L33 10z" fill="#fff"></path>
+  <path d="M38 20v18h13L38 20z" fill="#fff" opacity="0.72"></path>
+  <path d="M12 43h40l-5.5 9h-29L12 43z" fill="#fff"></path>
+</svg>

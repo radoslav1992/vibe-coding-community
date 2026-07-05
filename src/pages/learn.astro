@@ -1,0 +1,59 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+interface CourseRow {
+  id: number;
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  title: string;
+  description: string;
+  meta: string;
+}
+interface ArticleRow {
+  id: number;
+  title: string;
+  meta: string;
+}
+
+const LEVEL_COLORS: Record<string, string> = {
+  BEGINNER: 'background:#DCE9FF;color:#2456C9',
+  INTERMEDIATE: 'background:#FFE0F1;color:#C4005D',
+  ADVANCED: 'background:#FFE4D3;color:#C24E00',
+};
+
+const db = Astro.locals.runtime.env.DB;
+const [{ results: courses }, { results: articles }] = await Promise.all([
+  db.prepare('SELECT * FROM courses ORDER BY sort ASC').all<CourseRow>(),
+  db.prepare('SELECT * FROM articles ORDER BY sort ASC').all<ArticleRow>(),
+]);
+---
+<Layout active="learn" title="Learn · VibeShip">
+  <main class="page page--wide">
+    <h1 class="page-title">Learn</h1>
+    <p class="page-subtitle">Short courses and guides — from zero to a shipped product.</p>
+
+    <div class="course-grid">
+      {courses.map((course) => (
+        <div class="card course-card">
+          <span class="tag" style={`align-self:flex-start;letter-spacing:0.04em;${LEVEL_COLORS[course.level]}`}>{course.level}</span>
+          <h3>{course.title}</h3>
+          <p>{course.description}</p>
+          <div class="course-card__meta">{course.meta}</div>
+          <button type="button" class="btn btn--dark btn--block" style="padding:10px">Start the course</button>
+        </div>
+      ))}
+    </div>
+
+    <h2 style="font-size:18px;font-weight:800;margin:0 0 14px">Articles &amp; resources</h2>
+    <div class="card" style="overflow:hidden">
+      {articles.map((a) => (
+        <div class="list-row">
+          <div>
+            <div class="list-row__title">{a.title}</div>
+            <div class="list-row__meta">{a.meta}</div>
+          </div>
+          <span class="list-row__arrow">→</span>
+        </div>
+      ))}
+    </div>
+  </main>
+</Layout>

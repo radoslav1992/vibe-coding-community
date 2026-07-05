@@ -1,0 +1,88 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/auth');
+
+const saved = Astro.url.searchParams.get('saved') === '1';
+
+const toggles = [
+  {
+    key: 'notify_replies',
+    on: !!user.notify_replies,
+    title: 'Email notifications',
+    desc: 'Replies to your posts and comments',
+  },
+  {
+    key: 'notify_digest',
+    on: !!user.notify_digest,
+    title: 'Weekly digest',
+    desc: 'The best of the community, every Friday',
+  },
+  {
+    key: 'public_profile',
+    on: !!user.public_profile,
+    title: 'Public profile',
+    desc: 'Make your profile visible to signed-out visitors',
+  },
+];
+---
+<Layout active="none" title="Settings · VibeShip">
+  <main class="page stack stack--lg" style="max-width:640px">
+    <h1 style="font-size:28px;font-weight:900;margin:0;letter-spacing:-0.02em">Settings</h1>
+
+    {saved && (
+      <div style="background:#E8F6EC;color:#1B7F3B;border-radius:12px;padding:10px 14px;font-size:14px;font-weight:600">
+        Changes saved.
+      </div>
+    )}
+
+    <section class="card" style="padding:24px">
+      <h2 class="section-label" style="margin:0 0 16px">Profile</h2>
+      <form method="post" action="/api/settings" style="display:flex;flex-direction:column;gap:12px">
+        <label class="form-label">Name
+          <input class="form-input" name="name" value={user.name} required maxlength="80" />
+        </label>
+        <label class="form-label">Email
+          <input class="form-input" type="email" name="email" value={user.email} required maxlength="200" />
+        </label>
+        <label class="form-label">Short bio
+          <textarea class="form-input" name="bio" rows="2" maxlength="300" style="resize:vertical">{user.bio}</textarea>
+        </label>
+        <button type="submit" class="btn btn--dark" style="align-self:flex-start;padding:10px 20px">Save changes</button>
+      </form>
+    </section>
+
+    <section class="card" style="padding:24px">
+      <h2 class="section-label" style="margin:0 0 8px">Notifications</h2>
+      {toggles.map((t) => (
+        <div class="settings-row">
+          <div>
+            <div class="settings-row__title">{t.title}</div>
+            <div class="settings-row__desc">{t.desc}</div>
+          </div>
+          <form method="post" action="/api/settings/toggle">
+            <input type="hidden" name="key" value={t.key} />
+            <button type="submit" class:list={['toggle', { 'toggle--on': t.on }]} role="switch" aria-checked={t.on} aria-label={t.title}>
+              <span class="toggle__knob"></span>
+            </button>
+          </form>
+        </div>
+      ))}
+    </section>
+
+    <section class="card danger-zone" style="padding:24px">
+      <h2 class="section-label" style="margin:0 0 8px">Danger zone</h2>
+      <p style="margin:0 0 14px;font-size:14px;color:var(--muted)">
+        Deleting your account is permanent. Your posts remain, anonymized.
+      </p>
+      <form
+        method="post"
+        action="/api/account/delete"
+        onsubmit="return confirm('Delete your account permanently? This cannot be undone.')"
+      >
+        <button type="submit" class="btn btn--danger-outline" style="padding:10px 20px">Delete account</button>
+      </form>
+    </section>
+  </main>
+</Layout>

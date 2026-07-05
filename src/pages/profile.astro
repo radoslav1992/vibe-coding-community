@@ -1,0 +1,77 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { timeAgo, initials, avatarGradient } from '../lib/ui';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/auth');
+const db = Astro.locals.runtime.env.DB;
+
+interface ActivityRow {
+  kind: 'post' | 'comment';
+  title: string;
+  created_at: number;
+}
+
+const [stats, { results: activity }] = await Promise.all([
+  db
+    .prepare(
+      `SELECT (SELECT COUNT(*) FROM posts WHERE user_id = ?1 AND hidden = 0) AS posts,
+              (SELECT COUNT(*) FROM comments WHERE user_id = ?1) AS comments,
+              (SELECT COUNT(*) FROM votes v JOIN posts p ON p.id = v.post_id WHERE p.user_id = ?1) AS votes_received`
+    )
+    .bind(user.id)
+    .first<{ posts: number; comments: number; votes_received: number }>(),
+  db
+    .prepare(
+      `SELECT 'post' AS kind, title, created_at FROM posts WHERE user_id = ?1 AND hidden = 0
+       UNION ALL
+       SELECT 'comment' AS kind, body AS title, created_at FROM comments WHERE user_id = ?1
+       ORDER BY created_at DESC LIMIT 8`
+    )
+    .bind(user.id)
+    .all<ActivityRow>(),
+]);
+
+const points = (stats?.votes_received ?? 0) * 5 + (stats?.posts ?? 0) * 10 + (stats?.comments ?? 0) * 2;
+const memberSince = new Date(user.created_at * 1000).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+const roleLabel = user.role === 'admin' ? 'Admin' : user.role === 'moderator' ? 'Moderator' : null;
+---
+<Layout active="none" title={`${user.name} · VibeShip`}>
+  <main class="page page--narrow stack">
+    <div class="card profile-card">
+      <div class="avatar avatar--lg" style={`background:${avatarGradient(user.id)}`}>{initials(user.name)}</div>
+      <div style="flex:1;min-width:200px">
+        <h1 style="margin:0;font-size:24px;font-weight:900;letter-spacing:-0.01em">{user.name}</h1>
+        <div style="font-size:14px;color:var(--muted);font-weight:600">
+          @{user.username} · member since {memberSince}
+          {roleLabel && <> · <span style="color:var(--accent);font-weight:800">{roleLabel}</span></>}
+        </div>
+        {user.bio && <div style="font-size:14px;color:var(--body-text);margin-top:6px">{user.bio}</div>}
+      </div>
+      <div class="profile-stats">
+        <div><b>{stats?.posts ?? 0}</b><span>posts</span></div>
+        <div><b>{stats?.comments ?? 0}</b><span>comments</span></div>
+        <div><b>{points}</b><span>points</span></div>
+      </div>
+    </div>
+
+    <h2 style="margin:8px 0 0;font-size:16px;font-weight:800;color:#444">Recent activity</h2>
+    <div class="card" style="overflow:hidden">
+      {activity.map((a) => (
+        <div class="activity-row">
+          <div class="activity-row__kind">{a.kind === 'post' ? 'POST' : 'COMMENT'} · {timeAgo(a.created_at)}</div>
+          {a.kind === 'post' ? (
+            <div style="font-weight:800;font-size:15px">{a.title}</div>
+          ) : (
+            <div style="font-size:15px;color:var(--body-text)">“{a.title}”</div>
+          )}
+        </div>
+      ))}
+      {activity.length === 0 && (
+        <div class="activity-row" style="color:var(--faint);font-weight:600">
+          Nothing yet — <a href="/?compose=1#composer" style="color:var(--accent)">write your first post</a>.
+        </div>
+      )}
+    </div>
+  </main>
+</Layout>

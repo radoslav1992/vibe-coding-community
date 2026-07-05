@@ -1,0 +1,67 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Logo from '../components/Logo.astro';
+
+const user = Astro.locals.user;
+if (user) return Astro.redirect('/');
+
+const tab = Astro.url.searchParams.get('tab') === 'register' ? 'register' : 'login';
+const error = Astro.url.searchParams.get('error');
+
+const ERRORS: Record<string, string> = {
+  invalid: 'Wrong email or password. Try again.',
+  exists: 'An account with this email or username already exists.',
+  fields: 'Please fill in all fields (password: at least 8 characters).',
+  blocked: 'This account has been suspended. Contact a moderator.',
+};
+---
+<Layout active="none" title="Sign in · VibeShip">
+  <main class="auth-page">
+    <div class="auth-page__bg"></div>
+    <div class="auth-card">
+      <div style="text-align:center;margin-bottom:22px">
+        <div style="display:flex;justify-content:center;margin-bottom:10px"><Logo size={44} /></div>
+        <div style="font-weight:900;font-size:18px;letter-spacing:-0.01em">VibeShip</div>
+        <div style="font-size:14px;color:var(--muted);margin-top:4px">Sign in or create an account in a minute.</div>
+      </div>
+
+      <div class="auth-tabs">
+        <a href="/auth" class:list={['auth-tab', { 'auth-tab--active': tab === 'login' }]}>Sign in</a>
+        <a href="/auth?tab=register" class:list={['auth-tab', { 'auth-tab--active': tab === 'register' }]}>Register</a>
+      </div>
+
+      {error && ERRORS[error] && <div class="auth-error">{ERRORS[error]}</div>}
+
+      <form
+        method="post"
+        action={tab === 'register' ? '/api/auth/register' : '/api/auth/login'}
+        style="display:flex;flex-direction:column;gap:12px"
+      >
+        {tab === 'register' && (
+          <input class="auth-input" name="name" placeholder="Full name" required maxlength="80" />
+        )}
+        {tab === 'register' && (
+          <input class="auth-input" name="username" placeholder="Username" required maxlength="30" pattern="[a-zA-Z0-9_\-]+" title="Letters, numbers, dashes and underscores only" />
+        )}
+        <input class="auth-input" type="email" name="email" placeholder="Email" required maxlength="200" />
+        <input class="auth-input" type="password" name="password" placeholder="Password" required minlength={tab === 'register' ? 8 : 1} maxlength="200" />
+        <button type="submit" class="btn btn--dark btn--block" style="padding:12px;font-size:15px;font-weight:800;margin-top:4px">
+          {tab === 'register' ? 'Create account' : 'Sign in'}
+        </button>
+      </form>
+
+      <div class="auth-divider"><div></div><span>OR</span><div></div></div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button type="button" class="btn btn--ghost btn--block" style="padding:11px;color:var(--ink);font-weight:700" disabled title="OAuth sign-in is coming soon">
+          Continue with Google · soon
+        </button>
+        <button type="button" class="btn btn--ghost btn--block" style="padding:11px;color:var(--ink);font-weight:700" disabled title="OAuth sign-in is coming soon">
+          Continue with GitHub · soon
+        </button>
+      </div>
+
+      <p class="auth-fineprint">By signing in you accept the community guidelines and the privacy policy.</p>
+    </div>
+  </main>
+</Layout>

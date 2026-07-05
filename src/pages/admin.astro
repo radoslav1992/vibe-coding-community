@@ -1,0 +1,94 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { initials, avatarGradient } from '../lib/ui';
+
+const user = Astro.locals.user;
+if (!user || (user.role !== 'admin' && user.role !== 'moderator')) return Astro.redirect('/');
+
+const db = Astro.locals.runtime.env.DB;
+
+interface AdminUserRow {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'moderator' | 'member';
+  blocked: number;
+}
+interface ReportRow {
+  id: number;
+  post_id: number;
+  reporter_name: string;
+  reason: string;
+  title: string;
+}
+
+const ROLE_STYLES: Record<string, string> = {
+  admin: 'background:#FFE0F1;color:#C4005D',
+  moderator: 'background:#DCE9FF;color:#2456C9',
+  member: 'background:#EDE9DE;color:#6E695E',
+};
+const ROLE_LABELS: Record<string, string> = { admin: 'Admin', moderator: 'Moderator', member: 'Member' };
+
+const [{ results: users }, { results: reports }] = await Promise.all([
+  db.prepare('SELECT id, name, email, role, blocked FROM users ORDER BY created_at ASC LIMIT 100').all<AdminUserRow>(),
+  db
+    .prepare(
+      `SELECT r.id, r.post_id, r.reporter_name, r.reason, p.title
+       FROM reports r JOIN posts p ON p.id = r.post_id
+       WHERE r.status = 'open' ORDER BY r.created_at DESC`
+    )
+    .all<ReportRow>(),
+]);
+---
+<Layout active="none" title="Admin panel · VibeShip">
+  <main class="page page--medium stack stack--lg">
+    <div>
+      <h1 style="font-size:28px;font-weight:900;margin:0 0 4px;letter-spacing:-0.02em">Admin panel</h1>
+      <p style="margin:0;color:var(--muted);font-size:15px">Manage members and reported content.</p>
+    </div>
+
+    <section class="card" style="overflow:hidden">
+      <div class="admin-table-header">MEMBERS</div>
+      {users.map((u) => (
+        <div class="admin-user-row">
+          <div class="avatar avatar--sm" style={`background:${avatarGradient(u.id)}`}>{initials(u.name)}</div>
+          <div style="font-weight:800;font-size:15px">{u.name}</div>
+          <div style="font-size:14px;color:var(--muted);overflow:hidden;text-overflow:ellipsis">{u.email}</div>
+          <span class="role-chip" style={ROLE_STYLES[u.role]}>{ROLE_LABELS[u.role]}</span>
+          {u.id !== user.id && u.role !== 'admin' ? (
+            <form method="post" action="/api/admin/block">
+              <input type="hidden" name="user_id" value={u.id} />
+              <button
+                type="submit"
+                class:list={['btn', 'btn-sm', u.blocked ? 'btn--dark' : 'btn--ghost']}
+                style={u.blocked ? '' : 'color:var(--danger)'}
+              >{u.blocked ? 'Unblock' : 'Block'}</button>
+            </form>
+          ) : (
+            <span></span>
+          )}
+        </div>
+      ))}
+    </section>
+
+    <section class="card" style="overflow:hidden">
+      <div class="admin-table-header">REPORTED CONTENT</div>
+      {reports.length === 0 && (
+        <div style="padding:22px;font-size:14px;color:var(--faint);font-weight:600">No pending reports.</div>
+      )}
+      {reports.map((r) => (
+        <div class="admin-report-row">
+          <div style="flex:1;min-width:220px">
+            <a href={`/post/${r.post_id}`} style="font-weight:800;font-size:15px">{r.title}</a>
+            <div style="font-size:13px;color:var(--danger);font-weight:700">Reason: {r.reason} · by {r.reporter_name}</div>
+          </div>
+          <form method="post" action="/api/admin/report" style="display:flex;gap:10px">
+            <input type="hidden" name="report_id" value={r.id} />
+            <button type="submit" name="action" value="approve" class="btn btn--ghost btn-sm" style="color:#444">Approve</button>
+            <button type="submit" name="action" value="hide" class="btn btn--danger btn-sm">Hide post</button>
+          </form>
+        </div>
+      ))}
+    </section>
+  </main>
+</Layout>
