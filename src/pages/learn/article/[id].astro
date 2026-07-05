@@ -1,0 +1,33 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+
+interface ArticleRow {
+  id: number;
+  title: string;
+  meta: string;
+  body: string;
+}
+
+const db = Astro.locals.runtime.env.DB;
+
+const id = Number(Astro.params.id);
+if (!Number.isInteger(id) || id < 1) return Astro.redirect('/learn');
+
+const article = await db.prepare('SELECT * FROM articles WHERE id = ?1').bind(id).first<ArticleRow>();
+if (!article) return Astro.redirect('/learn');
+
+const paragraphs = article.body.split(/\n\s*\n/).filter(Boolean);
+---
+<Layout active="learn" title={`${article.title} · VibeShipyard`}>
+  <main class="page page--narrow stack">
+    <a href="/learn" class="back-link">← Back to Learn</a>
+
+    <article class="card thread-card">
+      <div style="font-size:13px;color:var(--faint);font-weight:700;margin-bottom:8px">{article.meta}</div>
+      <h1 class="thread-title">{article.title}</h1>
+      <div class="prose">
+        {paragraphs.length > 0 ? paragraphs.map((p) => <p>{p}</p>) : <p>Content coming soon.</p>}
+      </div>
+    </article>
+  </main>
+</Layout>

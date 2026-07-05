@@ -55,6 +55,17 @@ const [{ results: users }, { results: reports }] = await Promise.all([
           <div style="font-weight:800;font-size:15px">{u.name}</div>
           <div style="font-size:14px;color:var(--muted);overflow:hidden;text-overflow:ellipsis">{u.email}</div>
           <span class="role-chip" style={ROLE_STYLES[u.role]}>{ROLE_LABELS[u.role]}</span>
+          {user.role === 'admin' && u.id !== user.id && u.role !== 'admin' ? (
+            <form method="post" action="/api/admin/role">
+              <input type="hidden" name="user_id" value={u.id} />
+              <input type="hidden" name="role" value={u.role === 'moderator' ? 'member' : 'moderator'} />
+              <button type="submit" class="btn btn--ghost btn-sm" style="color:#2456C9">
+                {u.role === 'moderator' ? 'Remove mod' : 'Make mod'}
+              </button>
+            </form>
+          ) : (
+            <span></span>
+          )}
           {u.id !== user.id && u.role !== 'admin' ? (
             <form method="post" action="/api/admin/block">
               <input type="hidden" name="user_id" value={u.id} />

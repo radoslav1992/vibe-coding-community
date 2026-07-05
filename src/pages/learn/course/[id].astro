@@ -1,0 +1,89 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+
+interface CourseRow {
+  id: number;
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  title: string;
+  description: string;
+  meta: string;
+}
+interface LessonRow {
+  id: number;
+  sort: number;
+  title: string;
+  done: number;
+}
+
+const LEVEL_COLORS: Record<string, string> = {
+  BEGINNER: 'background:#DCE9FF;color:#2456C9',
+  INTERMEDIATE: 'background:#FFE0F1;color:#C4005D',
+  ADVANCED: 'background:#FFE4D3;color:#C24E00',
+};
+
+const db = Astro.locals.runtime.env.DB;
+const user = Astro.locals.user;
+
+const id = Number(Astro.params.id);
+if (!Number.isInteger(id) || id < 1) return Astro.redirect('/learn');
+
+const course = await db.prepare('SELECT * FROM courses WHERE id = ?1').bind(id).first<CourseRow>();
+if (!course) return Astro.redirect('/learn');
+
+const { results: lessons } = await db
+  .prepare(
+    `SELECT l.id, l.sort, l.title,
+       EXISTS(SELECT 1 FROM lesson_completions lc WHERE lc.lesson_id = l.id AND lc.user_id = ?2) AS done
+     FROM lessons l WHERE l.course_id = ?1 ORDER BY l.sort ASC`
+  )
+  .bind(id, user?.id ?? 0)
+  .all<LessonRow>();
+
+const doneCount = lessons.filter((l) => l.done).length;
+const nextLesson = lessons.find((l) => !l.done) ?? lessons[0];
+---
+<Layout active="learn" title={`${course.title} · VibeShipyard`}>
+  <main class="page page--narrow stack">
+    <a href="/learn" class="back-link">← Back to Learn</a>
+
+    <div class="card thread-card">
+      <div style="margin-bottom:10px">
+        <span class="tag" style={`letter-spacing:0.04em;${LEVEL_COLORS[course.level]}`}>{course.level}</span>
+      </div>
+      <h1 class="thread-title">{course.title}</h1>
+      <p style="margin:0 0 12px;font-size:16px;line-height:1.6;color:var(--body-text)">{course.description}</p>
+      <div style="font-size:13px;color:var(--faint);font-weight:700">{course.meta}</div>
+      {user && lessons.length > 0 && (
+        <div style="margin-top:16px">
+          <div class="progress-bar">
+            <div class="progress-bar__fill" style={`width:${Math.round((doneCount / lessons.length) * 100)}%`}></div>
+          </div>
+          <div style="font-size:13px;color:var(--muted);font-weight:600;margin-top:6px">
+            {doneCount} of {lessons.length} lessons completed
+          </div>
+        </div>
+      )}
+      {lessons.length > 0 && nextLesson && (
+        <a href={`/learn/lesson/${nextLesson.id}`} class="btn btn--dark" style="margin-top:16px;align-self:flex-start;display:inline-flex">
+          {doneCount === 0 ? 'Start the course' : doneCount === lessons.length ? 'Review from the start' : 'Continue where you left off'}
+        </a>
+      )}
+    </div>
+
+    <h2 style="margin:8px 0 0;font-size:16px;font-weight:800;color:#444">Lessons</h2>
+    <div class="card" style="overflow:hidden">
+      {lessons.map((l, i) => (
+        <a href={`/learn/lesson/${l.id}`} class="list-row" style="display:flex">
+          <div style="display:flex;align-items:center;gap:14px">
+            <span class:list={['lesson-number', { 'lesson-number--done': !!l.done }]}>{l.done ? '✓' : i + 1}</span>
+            <div class="list-row__title">{l.title}</div>
+          </div>
+          <span class="list-row__arrow">→</span>
+        </a>
+      ))}
+      {lessons.length === 0 && (
+        <div style="padding:22px;font-size:14px;color:var(--faint);font-weight:600">Lessons coming soon.</div>
+      )}
+    </div>
+  </main>
+</Layout>

@@ -18,6 +18,7 @@ export interface Post {
   id: number;
   user_id: number | null;
   author_name: string;
+  author_username: string | null;
   tag: string;
   title: string;
   body: string;
@@ -32,6 +33,7 @@ export interface Comment {
   post_id: number;
   user_id: number | null;
   author_name: string;
+  author_username: string | null;
   body: string;
   created_at: number;
 }
@@ -48,10 +50,12 @@ export interface EventRow {
 
 const POST_SELECT = `
   SELECT p.id, p.user_id, p.author_name, p.tag, p.title, p.body, p.created_at,
+    au.username AS author_username,
     (SELECT COUNT(*) FROM votes v WHERE v.post_id = p.id) AS votes,
     (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comment_count,
     EXISTS(SELECT 1 FROM votes v2 WHERE v2.post_id = p.id AND v2.user_id = ?1) AS voted
   FROM posts p
+  LEFT JOIN users au ON au.id = p.user_id
   WHERE p.hidden = 0
 `;
 
@@ -87,7 +91,11 @@ export async function getPost(db: D1Database, id: number, viewerId?: number | nu
 
 export async function listComments(db: D1Database, postId: number): Promise<Comment[]> {
   const { results } = await db
-    .prepare('SELECT * FROM comments WHERE post_id = ?1 ORDER BY created_at ASC')
+    .prepare(
+      `SELECT c.*, au.username AS author_username
+       FROM comments c LEFT JOIN users au ON au.id = c.user_id
+       WHERE c.post_id = ?1 ORDER BY c.created_at ASC`
+    )
     .bind(postId)
     .all<Comment>();
   return results;
@@ -113,6 +121,50 @@ export async function communityStats(db: D1Database): Promise<{ members: number;
     )
     .first<{ members: number; topics: number; comments: number }>();
   return row ?? { members: 0, topics: 0, comments: 0 };
+}
+
+export interface ActivityItem {
+  kind: 'post' | 'comment';
+  ref_id: number;
+  title: string;
+  created_at: number;
+}
+
+export interface UserStats {
+  posts: number;
+  comments: number;
+  votes_received: number;
+}
+
+export async function userStats(db: D1Database, userId: number): Promise<UserStats> {
+  const row = await db
+    .prepare(
+      `SELECT (SELECT COUNT(*) FROM posts WHERE user_id = ?1 AND hidden = 0) AS posts,
+              (SELECT COUNT(*) FROM comments WHERE user_id = ?1) AS comments,
+              (SELECT COUNT(*) FROM votes v JOIN posts p ON p.id = v.post_id WHERE p.user_id = ?1) AS votes_received`
+    )
+    .bind(userId)
+    .first<UserStats>();
+  return row ?? { posts: 0, comments: 0, votes_received: 0 };
+}
+
+export async function userActivity(db: D1Database, userId: number, limit = 8): Promise<ActivityItem[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT 'post' AS kind, id AS ref_id, title, created_at
+       FROM posts WHERE user_id = ?1 AND hidden = 0
+       UNION ALL
+       SELECT 'comment' AS kind, post_id AS ref_id, body AS title, created_at
+       FROM comments WHERE user_id = ?1
+       ORDER BY created_at DESC LIMIT ?2`
+    )
+    .bind(userId, limit)
+    .all<ActivityItem>();
+  return results;
+}
+
+export function karmaPoints(stats: UserStats): number {
+  return stats.votes_received * 5 + stats.posts * 10 + stats.comments * 2;
 }
 
 export async function nextEvent(db: D1Database): Promise<EventRow | null> {

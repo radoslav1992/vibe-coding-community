@@ -14,6 +14,8 @@ const db = Astro.locals.runtime.env.DB;
 const { results: items } = await db
   .prepare('SELECT * FROM news ORDER BY published_at DESC LIMIT 30')
   .all<NewsRow>();
+
+const excerpt = (s: string) => (s.length > 220 ? s.slice(0, 217).trimEnd() + '…' : s);
 ---
 <Layout active="news" title="News · VibeShipyard">
   <main class="page page--medium">
@@ -26,15 +28,17 @@ const { results: items } = await db
             <div class="news-hero__bg"></div>
             <div class="news-hero__content">
               <div class="news-date" style="opacity:0.85">{longDate(n.published_at)} · FEATURED</div>
-              <h3 style="margin:0 0 8px;font-size:24px;font-weight:900;letter-spacing:-0.01em">{n.title}</h3>
-              <p style="margin:0;font-size:15px;line-height:1.55;max-width:560px">{n.body}</p>
+              <h3 style="margin:0 0 8px;font-size:24px;font-weight:900;letter-spacing:-0.01em">
+                <a href={`/news/${n.id}`} style="color:inherit">{n.title}</a>
+              </h3>
+              <p style="margin:0;font-size:15px;line-height:1.55;max-width:560px">{excerpt(n.body)}</p>
             </div>
           </article>
         ) : (
           <article class="card news-card">
             <div class="news-date" style="color:var(--faint)">{longDate(n.published_at)}</div>
-            <h3>{n.title}</h3>
-            <p>{n.body}</p>
+            <h3><a href={`/news/${n.id}`} class="news-card__link">{n.title}</a></h3>
+            <p>{excerpt(n.body)}</p>
           </article>
         )
       )}

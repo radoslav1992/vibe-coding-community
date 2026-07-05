@@ -1,0 +1,76 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+
+interface LessonRow {
+  id: number;
+  course_id: number;
+  sort: number;
+  title: string;
+  content: string;
+  course_title: string;
+  done: number;
+}
+interface NeighborRow {
+  id: number;
+  sort: number;
+}
+
+const db = Astro.locals.runtime.env.DB;
+const user = Astro.locals.user;
+
+const id = Number(Astro.params.id);
+if (!Number.isInteger(id) || id < 1) return Astro.redirect('/learn');
+
+const lesson = await db
+  .prepare(
+    `SELECT l.*, c.title AS course_title,
+       EXISTS(SELECT 1 FROM lesson_completions lc WHERE lc.lesson_id = l.id AND lc.user_id = ?2) AS done
+     FROM lessons l JOIN courses c ON c.id = l.course_id WHERE l.id = ?1`
+  )
+  .bind(id, user?.id ?? 0)
+  .first<LessonRow>();
+if (!lesson) return Astro.redirect('/learn');
+
+const { results: siblings } = await db
+  .prepare('SELECT id, sort FROM lessons WHERE course_id = ?1 ORDER BY sort ASC')
+  .bind(lesson.course_id)
+  .all<NeighborRow>();
+const idx = siblings.findIndex((s) => s.id === lesson.id);
+const prev = idx > 0 ? siblings[idx - 1] : null;
+const next = idx < siblings.length - 1 ? siblings[idx + 1] : null;
+
+const paragraphs = lesson.content.split(/\n\s*\n/).filter(Boolean);
+---
+<Layout active="learn" title={`${lesson.title} · VibeShipyard`}>
+  <main class="page page--narrow stack">
+    <a href={`/learn/course/${lesson.course_id}`} class="back-link">← {lesson.course_title}</a>
+
+    <article class="card thread-card">
+      <div style="font-size:12px;font-weight:800;letter-spacing:0.08em;color:var(--faint);margin-bottom:8px">
+        LESSON {idx + 1} OF {siblings.length}
+      </div>
+      <h1 class="thread-title">{lesson.title}</h1>
+      <div class="prose">
+        {paragraphs.map((p) => <p>{p}</p>)}
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:24px;align-items:center;flex-wrap:wrap">
+        {user ? (
+          <form method="post" action={`/api/lessons/${lesson.id}/complete`}>
+            <button type="submit" class:list={['btn', lesson.done ? 'btn--accent' : 'btn--dark']}>
+              {lesson.done ? '✓ Completed — mark as unread' : 'Mark as complete'}
+            </button>
+          </form>
+        ) : (
+          <span style="font-size:14px;color:var(--muted);font-weight:600">
+            <a href="/auth" style="color:var(--accent);text-decoration:underline">Sign in</a> to track your progress.
+          </span>
+        )}
+        <span class="flex-spacer"></span>
+        {prev && <a href={`/learn/lesson/${prev.id}`} class="btn btn--ghost btn-sm">← Previous</a>}
+        {next && <a href={`/learn/lesson/${next.id}`} class="btn btn--outline btn-sm">Next lesson →</a>}
+        {!next && <a href={`/learn/course/${lesson.course_id}`} class="btn btn--outline btn-sm">Finish course →</a>}
+      </div>
+    </article>
+  </main>
+</Layout>

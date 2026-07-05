@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 
-export const POST: APIRoute = async ({ params, locals, redirect }) => {
+const REASONS = ['Spam / advertising', 'Disrespectful behavior', 'Off-topic', 'Misleading content'];
+
+export const POST: APIRoute = async ({ params, request, locals, redirect }) => {
   const user = locals.user;
   if (!user) return redirect('/auth');
 
@@ -11,6 +13,10 @@ export const POST: APIRoute = async ({ params, locals, redirect }) => {
   const post = await db.prepare('SELECT id FROM posts WHERE id = ?1 AND hidden = 0').bind(postId).first();
   if (!post) return redirect('/');
 
+  const form = await request.formData();
+  const rawReason = String(form.get('reason') ?? '');
+  const reason = REASONS.includes(rawReason) ? rawReason : 'Flagged by a member';
+
   const open = await db
     .prepare("SELECT id FROM reports WHERE post_id = ?1 AND reporter_id = ?2 AND status = 'open'")
     .bind(postId, user.id)
@@ -18,7 +24,7 @@ export const POST: APIRoute = async ({ params, locals, redirect }) => {
   if (!open) {
     await db
       .prepare('INSERT INTO reports (post_id, reporter_id, reporter_name, reason) VALUES (?1, ?2, ?3, ?4)')
-      .bind(postId, user.id, user.name, 'Flagged by a member')
+      .bind(postId, user.id, user.name, reason)
       .run();
   }
   return redirect(`/post/${postId}`);

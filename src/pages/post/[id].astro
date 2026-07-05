@@ -24,7 +24,11 @@ const comments = await listComments(db, id);
       <div style="margin-bottom:10px"><Tag name={post.tag} /></div>
       <h1 class="thread-title">{post.title}</h1>
       <div class="thread-meta">
-        <span style="color:#444">{post.author_name}</span>
+        {post.author_username ? (
+          <a href={`/u/${post.author_username}`} style="color:#444">{post.author_name}</a>
+        ) : (
+          <span style="color:#444">{post.author_name}</span>
+        )}
         <span>{timeAgo(post.created_at)}</span>
       </div>
       <p class="thread-body">{post.body}</p>
@@ -38,9 +42,18 @@ const comments = await listComments(db, id);
           {post.comment_count} {post.comment_count === 1 ? 'comment' : 'comments'}
         </span>
         {user && (
-          <form method="post" action={`/api/posts/${post.id}/report`} style="margin-left:auto">
-            <button type="submit" class="btn btn--ghost btn-sm" title="Report this post to the moderators">⚑ Report</button>
-          </form>
+          <details class="report-menu" style="margin-left:auto">
+            <summary class="btn btn--ghost btn-sm" title="Report this post to the moderators">⚑ Report</summary>
+            <form method="post" action={`/api/posts/${post.id}/report`} class="report-menu__panel">
+              <div style="font-size:13px;font-weight:800;color:var(--muted)">Why are you reporting this?</div>
+              {['Spam / advertising', 'Disrespectful behavior', 'Off-topic', 'Misleading content'].map((r) => (
+                <label class="report-menu__option">
+                  <input type="radio" name="reason" value={r} required /> {r}
+                </label>
+              ))}
+              <button type="submit" class="btn btn--danger btn-sm">Send report</button>
+            </form>
+          </details>
         )}
       </div>
     </article>
@@ -52,7 +65,11 @@ const comments = await listComments(db, id);
         <div class="avatar avatar--sm" style={`background:${avatarGradient(c.user_id ?? i)}`}>{initials(c.author_name)}</div>
         <div>
           <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:4px">
-            <span style="font-weight:800;font-size:14px">{c.author_name}</span>
+            {c.author_username ? (
+              <a href={`/u/${c.author_username}`} style="font-weight:800;font-size:14px">{c.author_name}</a>
+            ) : (
+              <span style="font-weight:800;font-size:14px">{c.author_name}</span>
+            )}
             <span style="font-size:12px;color:var(--faint);font-weight:600">{timeAgo(c.created_at)}</span>
           </div>
           <p>{c.body}</p>
