@@ -15,9 +15,7 @@
     {
       "binding": "DB",
       "database_name": "vibeship-db",
-      // Create the database with `wrangler d1 create vibeship-db`
-      // and paste the generated id here before deploying.
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+      "database_id": "63e05c85-81a3-4dc6-92ec-fcf31fa849cd"
     }
   ]
 }
