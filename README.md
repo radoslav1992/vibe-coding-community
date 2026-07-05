@@ -1,8 +1,8 @@
-# VibeShip ⛵
+# VibeShipyard ⛵
 
 **The global vibe coding community.** Share projects, ask questions, learn and ship together.
 
-VibeShip is a community platform — a feed with upvotes and tags, discussion threads, events with RSVPs, news, learning resources, member profiles and a moderation panel — built to run entirely on Cloudflare.
+VibeShipyard is a community platform — a feed with upvotes and tags, discussion threads, events with RSVPs, news, learning resources, member profiles and a moderation panel — built to run entirely on Cloudflare.
 
 ## Stack
 

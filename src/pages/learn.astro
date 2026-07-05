@@ -26,7 +26,7 @@ const [{ results: courses }, { results: articles }] = await Promise.all([
   db.prepare('SELECT * FROM articles ORDER BY sort ASC').all<ArticleRow>(),
 ]);
 ---
-<Layout active="learn" title="Learn · VibeShip">
+<Layout active="learn" title="Learn · VibeShipyard">
   <main class="page page--wide">
     <h1 class="page-title">Learn</h1>
     <p class="page-subtitle">Short courses and guides — from zero to a shipped product.</p>
