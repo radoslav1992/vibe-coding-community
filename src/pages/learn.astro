@@ -7,6 +7,8 @@ interface CourseRow {
   title: string;
   description: string;
   meta: string;
+  lesson_count: number;
+  done_count: number;
 }
 interface ArticleRow {
   id: number;
@@ -21,9 +23,20 @@ const LEVEL_COLORS: Record<string, string> = {
 };
 
 const db = Astro.locals.runtime.env.DB;
+const user = Astro.locals.user;
+
 const [{ results: courses }, { results: articles }] = await Promise.all([
-  db.prepare('SELECT * FROM courses ORDER BY sort ASC').all<CourseRow>(),
-  db.prepare('SELECT * FROM articles ORDER BY sort ASC').all<ArticleRow>(),
+  db
+    .prepare(
+      `SELECT c.*,
+         (SELECT COUNT(*) FROM lessons l WHERE l.course_id = c.id) AS lesson_count,
+         (SELECT COUNT(*) FROM lessons l JOIN lesson_completions lc ON lc.lesson_id = l.id AND lc.user_id = ?1
+          WHERE l.course_id = c.id) AS done_count
+       FROM courses c ORDER BY c.sort ASC`
+    )
+    .bind(user?.id ?? 0)
+    .all<CourseRow>(),
+  db.prepare('SELECT id, title, meta FROM articles ORDER BY sort ASC').all<ArticleRow>(),
 ]);
 ---
 <Layout active="learn" title="Learn · VibeShipyard">
@@ -32,27 +45,38 @@ const [{ results: courses }, { results: articles }] = await Promise.all([
     <p class="page-subtitle">Short courses and guides — from zero to a shipped product.</p>
 
     <div class="course-grid">
-      {courses.map((course) => (
-        <div class="card course-card">
-          <span class="tag" style={`align-self:flex-start;letter-spacing:0.04em;${LEVEL_COLORS[course.level]}`}>{course.level}</span>
-          <h3>{course.title}</h3>
-          <p>{course.description}</p>
-          <div class="course-card__meta">{course.meta}</div>
-          <button type="button" class="btn btn--dark btn--block" style="padding:10px">Start the course</button>
-        </div>
-      ))}
+      {courses.map((course) => {
+        const started = course.done_count > 0;
+        const finished = course.lesson_count > 0 && course.done_count === course.lesson_count;
+        return (
+          <div class="card course-card">
+            <span class="tag" style={`align-self:flex-start;letter-spacing:0.04em;${LEVEL_COLORS[course.level]}`}>{course.level}</span>
+            <h3><a href={`/learn/course/${course.id}`} style="color:inherit">{course.title}</a></h3>
+            <p>{course.description}</p>
+            <div class="course-card__meta">{course.meta}</div>
+            {user && started && (
+              <div class="progress-bar" title={`${course.done_count} of ${course.lesson_count} lessons completed`}>
+                <div class="progress-bar__fill" style={`width:${Math.round((course.done_count / course.lesson_count) * 100)}%`}></div>
+              </div>
+            )}
+            <a href={`/learn/course/${course.id}`} class="btn btn--dark btn--block" style="padding:10px">
+              {finished ? '✓ Completed — review' : started ? `Continue (${course.done_count}/${course.lesson_count})` : 'Start the course'}
+            </a>
+          </div>
+        );
+      })}
     </div>
 
     <h2 style="font-size:18px;font-weight:800;margin:0 0 14px">Articles &amp; resources</h2>
     <div class="card" style="overflow:hidden">
       {articles.map((a) => (
-        <div class="list-row">
+        <a href={`/learn/article/${a.id}`} class="list-row" style="display:flex">
           <div>
             <div class="list-row__title">{a.title}</div>
             <div class="list-row__meta">{a.meta}</div>
           </div>
           <span class="list-row__arrow">→</span>
-        </div>
+        </a>
       ))}
     </div>
   </main>

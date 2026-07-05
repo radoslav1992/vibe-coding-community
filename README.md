@@ -16,14 +16,18 @@ VibeShipyard is a community platform — a feed with upvotes and tags, discussio
 | Screen | What it does |
 | --- | --- |
 | Home `/` | Post feed with tag filters, full-text search, upvotes and a composer |
-| Thread `/post/:id` | Full post, comments, reply box, report-to-moderators |
+| Thread `/post/:id` | Full post, comments, reply box, report-to-moderators with reason picker |
 | Events `/events` | Meetups/workshops/hackathons with one-click RSVP |
-| News `/news` | Curated news with a featured hero article |
-| Learn `/learn` | Courses by level + articles list |
+| News `/news`, `/news/:id` | Curated news with a featured hero article and detail pages |
+| Learn `/learn` | Courses by level (with per-user progress) + articles |
+| Course `/learn/course/:id` | Lesson list with completion state and continue button |
+| Lesson `/learn/lesson/:id` | Lesson content, mark-as-complete, prev/next navigation |
+| Article `/learn/article/:id` | Full article content |
 | Auth `/auth` | Sign in / register (first registered account becomes **admin**) |
-| Profile `/profile` | Stats (posts, comments, points) and recent activity |
+| Profile `/profile` | Stats (posts, comments, points) and recent activity with links |
+| Public profile `/u/:username` | Member profiles; the "Public profile" setting gates guest access |
 | Settings `/settings` | Profile editing, notification toggles, account deletion (posts stay, anonymized) |
-| Admin `/admin` | Member management (block/unblock) and reported-content queue — admins & moderators only |
+| Admin `/admin` | Block/unblock members, promote/demote moderators (admins only), reported-content queue |
 
 ## Local development
 

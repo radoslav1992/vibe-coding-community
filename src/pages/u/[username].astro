@@ -1,0 +1,75 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { timeAgo, initials, avatarGradient } from '../../lib/ui';
+import { userStats, userActivity, karmaPoints, type User } from '../../lib/db';
+
+const db = Astro.locals.runtime.env.DB;
+const viewer = Astro.locals.user;
+
+const username = String(Astro.params.username ?? '').toLowerCase();
+if (!/^[a-z0-9_-]{1,30}$/.test(username)) return Astro.redirect('/');
+
+const profile = await db.prepare('SELECT * FROM users WHERE username = ?1').bind(username).first<User>();
+if (!profile || profile.blocked) return Astro.redirect('/');
+
+if (viewer?.id === profile.id) return Astro.redirect('/profile');
+
+// The "Public profile" setting controls visibility to signed-out visitors.
+const visible = !!viewer || !!profile.public_profile;
+
+const [stats, activity] = visible
+  ? await Promise.all([userStats(db, profile.id), userActivity(db, profile.id)])
+  : [null, []];
+
+const memberSince = new Date(profile.created_at * 1000).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+const roleLabel = profile.role === 'admin' ? 'Admin' : profile.role === 'moderator' ? 'Moderator' : null;
+---
+<Layout active="none" title={`@${profile.username} · VibeShipyard`}>
+  <main class="page page--narrow stack">
+    <a href="/" class="back-link">← Back to the feed</a>
+
+    {!visible && (
+      <div class="guest-note">
+        This member's profile is private. <a href="/auth">Sign in</a> to view it.
+      </div>
+    )}
+
+    {visible && stats && (
+      <>
+        <div class="card profile-card">
+          <div class="avatar avatar--lg" style={`background:${avatarGradient(profile.id)}`}>{initials(profile.name)}</div>
+          <div style="flex:1;min-width:200px">
+            <h1 style="margin:0;font-size:24px;font-weight:900;letter-spacing:-0.01em">{profile.name}</h1>
+            <div style="font-size:14px;color:var(--muted);font-weight:600">
+              @{profile.username} · member since {memberSince}
+              {roleLabel && <> · <span style="color:var(--accent);font-weight:800">{roleLabel}</span></>}
+            </div>
+            {profile.bio && <div style="font-size:14px;color:var(--body-text);margin-top:6px">{profile.bio}</div>}
+          </div>
+          <div class="profile-stats">
+            <div><b>{stats.posts}</b><span>posts</span></div>
+            <div><b>{stats.comments}</b><span>comments</span></div>
+            <div><b>{karmaPoints(stats)}</b><span>points</span></div>
+          </div>
+        </div>
+
+        <h2 style="margin:8px 0 0;font-size:16px;font-weight:800;color:#444">Recent activity</h2>
+        <div class="card" style="overflow:hidden">
+          {activity.map((a) => (
+            <a href={`/post/${a.ref_id}`} class="activity-row" style="display:block">
+              <div class="activity-row__kind">{a.kind === 'post' ? 'POST' : 'COMMENT'} · {timeAgo(a.created_at)}</div>
+              {a.kind === 'post' ? (
+                <div style="font-weight:800;font-size:15px">{a.title}</div>
+              ) : (
+                <div style="font-size:15px;color:var(--body-text)">“{a.title}”</div>
+              )}
+            </a>
+          ))}
+          {activity.length === 0 && (
+            <div class="activity-row" style="color:var(--faint);font-weight:600">No activity yet.</div>
+          )}
+        </div>
+      </>
+    )}
+  </main>
+</Layout>
