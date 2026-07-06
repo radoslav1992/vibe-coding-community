@@ -4,7 +4,8 @@ import PostCard from '../components/PostCard.astro';
 import VoteScript from '../components/VoteScript.astro';
 import Logo from '../components/Logo.astro';
 import { listPosts, communityStats, nextEvent } from '../lib/db';
-import { TAG_NAMES, eventDay } from '../lib/ui';
+import { TAG_NAMES, eventDay, initials, avatarGradient } from '../lib/ui';
+import { leaderboard } from '../lib/gamification';
 
 const db = Astro.locals.runtime.env.DB;
 const user = Astro.locals.user;
@@ -14,10 +15,11 @@ const q = Astro.url.searchParams.get('q');
 const composeOpen = Astro.url.searchParams.get('compose') === '1';
 const activeTag = tag && (TAG_NAMES as readonly string[]).includes(tag) ? tag : null;
 
-const [posts, stats, upcoming] = await Promise.all([
+const [posts, stats, upcoming, topCrew] = await Promise.all([
   listPosts(db, { viewerId: user?.id, tag: activeTag, q }),
   communityStats(db),
   nextEvent(db),
+  leaderboard(db, Math.floor(Date.now() / 1000) - 30 * 86400, 3),
 ]);
 const upcomingDate = upcoming ? eventDay(upcoming.starts_at) : null;
 
@@ -107,6 +109,23 @@ const filterHref = (name: string | null) => {
             </div>
           </div>
           <a href="/events" class="btn btn--outline btn--block" style="margin-top:14px;padding:9px;font-size:13px">See all events</a>
+        </div>
+      )}
+
+      {topCrew.length > 0 && (
+        <div class="card next-event-card">
+          <div class="next-event-card__label">TOP CREW · LAST 30 DAYS</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            {topCrew.map((m, i) => (
+              <a href={`/u/${m.username}`} style="display:flex;align-items:center;gap:12px">
+                <span style="font-size:16px;width:22px;text-align:center">{['🥇', '🥈', '🥉'][i]}</span>
+                <span class="avatar avatar--sm" style={`background:${avatarGradient(m.id)};width:30px;height:30px;font-size:11px`}>{initials(m.name)}</span>
+                <span style="font-weight:700;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{m.name}</span>
+                <span style="font-size:13px;color:var(--faint);font-weight:700">{m.points} pts</span>
+              </a>
+            ))}
+          </div>
+          <a href="/leaderboard" class="btn btn--outline btn--block" style="margin-top:14px;padding:9px;font-size:13px">Full leaderboard</a>
         </div>
       )}
     </aside>

@@ -1,7 +1,9 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import GamificationPanel from '../../components/GamificationPanel.astro';
 import { timeAgo, initials, avatarGradient } from '../../lib/ui';
 import { userStats, userActivity, karmaPoints, type User } from '../../lib/db';
+import { gamStats, rankFor, type GamStats } from '../../lib/gamification';
 
 const db = Astro.locals.runtime.env.DB;
 const viewer = Astro.locals.user;
@@ -17,9 +19,10 @@ if (viewer?.id === profile.id) return Astro.redirect('/profile');
 // The "Public profile" setting controls visibility to signed-out visitors.
 const visible = !!viewer || !!profile.public_profile;
 
-const [stats, activity] = visible
-  ? await Promise.all([userStats(db, profile.id), userActivity(db, profile.id)])
-  : [null, []];
+const [stats, activity, gam] = visible
+  ? await Promise.all([userStats(db, profile.id), userActivity(db, profile.id), gamStats(db, profile.id)])
+  : [null, [], null as GamStats | null];
+const rank = stats ? rankFor(karmaPoints(stats)) : null;
 
 const memberSince = new Date(profile.created_at * 1000).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 const roleLabel = profile.role === 'admin' ? 'Admin' : profile.role === 'moderator' ? 'Moderator' : null;
@@ -43,6 +46,7 @@ const roleLabel = profile.role === 'admin' ? 'Admin' : profile.role === 'moderat
             <div style="font-size:14px;color:var(--muted);font-weight:600">
               @{profile.username} · member since {memberSince}
               {roleLabel && <> · <span style="color:var(--accent);font-weight:800">{roleLabel}</span></>}
+              {rank && <> · <span title={`${karmaPoints(stats)} points`}>{rank.current.icon} {rank.current.name}</span></>}
             </div>
             {profile.bio && <div style="font-size:14px;color:var(--body-text);margin-top:6px">{profile.bio}</div>}
           </div>
@@ -52,6 +56,8 @@ const roleLabel = profile.role === 'admin' ? 'Admin' : profile.role === 'moderat
             <div><b>{karmaPoints(stats)}</b><span>points</span></div>
           </div>
         </div>
+
+        {gam && <GamificationPanel points={karmaPoints(stats)} stats={gam} />}
 
         <h2 style="margin:8px 0 0;font-size:16px;font-weight:800;color:#444">Recent activity</h2>
         <div class="card" style="overflow:hidden">

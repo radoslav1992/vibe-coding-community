@@ -1,0 +1,59 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { initials, avatarGradient } from '../lib/ui';
+import { leaderboard, rankFor } from '../lib/gamification';
+
+const db = Astro.locals.runtime.env.DB;
+const user = Astro.locals.user;
+
+const period = Astro.url.searchParams.get('period') === 'month' ? 'month' : 'all';
+const since = period === 'month' ? Math.floor(Date.now() / 1000) - 30 * 86400 : 0;
+const rows = await leaderboard(db, since);
+
+const MEDALS = ['🥇', '🥈', '🥉'];
+const n = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
+---
+<Layout active="leaderboard" title="Leaderboard · VibeShipyard">
+  <main class="page page--medium">
+    <h1 class="page-title">Leaderboard</h1>
+    <p class="page-subtitle">The most active crew in the shipyard. Earn points by posting (+10), receiving upvotes (+5), completing lessons (+3) and commenting (+2).</p>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+      <a href="/leaderboard" class:list={['filter-chip', { 'filter-chip--active': period === 'all' }]}>All time</a>
+      <a href="/leaderboard?period=month" class:list={['filter-chip', { 'filter-chip--active': period === 'month' }]}>Last 30 days</a>
+    </div>
+
+    <div class="card" style="overflow:hidden">
+      {rows.map((r, i) => {
+        const rank = rankFor(r.points);
+        const isYou = user?.id === r.id;
+        return (
+          <a href={`/u/${r.username}`} class="lb-row" style={isYou ? 'background:var(--accent-soft)' : ''}>
+            <span class="lb-row__place">{MEDALS[i] ?? `#${i + 1}`}</span>
+            <span class="avatar avatar--sm" style={`background:${avatarGradient(r.id)}`}>{initials(r.name)}</span>
+            <span class="lb-row__who">
+              <span class="lb-row__name">{r.name}{isYou && <span style="color:var(--accent)"> · you</span>}</span>
+              <span class="lb-row__rank">{rank.current.icon} {rank.current.name}</span>
+            </span>
+            <span class="lb-row__detail">{n(r.posts, 'post')} · {n(r.comments, 'comment')} · {n(r.votes_received, 'upvote')}</span>
+            <span class="lb-row__points">{r.points.toLocaleString('en-US')} pts</span>
+          </a>
+        );
+      })}
+      {rows.length === 0 && (
+        <div style="padding:24px;font-size:14px;color:var(--faint);font-weight:600">
+          No activity in this period yet — be the first on the board!
+        </div>
+      )}
+    </div>
+
+    <div class="card" style="margin-top:20px;padding:20px 24px">
+      <div class="section-label" style="margin-bottom:12px">Ranks</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        {['⚓ Deckhand · 0', '⛵ Sailor · 50', '🧭 Navigator · 150', '🚢 Captain · 400', '🏆 Admiral · 1000'].map((r) => (
+          <span class="filter-chip" style="cursor:default">{r} pts</span>
+        ))}
+      </div>
+    </div>
+  </main>
+</Layout>
