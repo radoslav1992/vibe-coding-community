@@ -134,6 +134,7 @@ export interface UserStats {
   posts: number;
   comments: number;
   votes_received: number;
+  lessons_done: number;
 }
 
 export async function userStats(db: D1Database, userId: number): Promise<UserStats> {
@@ -141,11 +142,12 @@ export async function userStats(db: D1Database, userId: number): Promise<UserSta
     .prepare(
       `SELECT (SELECT COUNT(*) FROM posts WHERE user_id = ?1 AND hidden = 0) AS posts,
               (SELECT COUNT(*) FROM comments WHERE user_id = ?1) AS comments,
-              (SELECT COUNT(*) FROM votes v JOIN posts p ON p.id = v.post_id WHERE p.user_id = ?1) AS votes_received`
+              (SELECT COUNT(*) FROM votes v JOIN posts p ON p.id = v.post_id WHERE p.user_id = ?1) AS votes_received,
+              (SELECT COUNT(*) FROM lesson_completions WHERE user_id = ?1) AS lessons_done`
     )
     .bind(userId)
     .first<UserStats>();
-  return row ?? { posts: 0, comments: 0, votes_received: 0 };
+  return row ?? { posts: 0, comments: 0, votes_received: 0, lessons_done: 0 };
 }
 
 export async function userActivity(db: D1Database, userId: number, limit = 8): Promise<ActivityItem[]> {
@@ -164,7 +166,7 @@ export async function userActivity(db: D1Database, userId: number, limit = 8): P
 }
 
 export function karmaPoints(stats: UserStats): number {
-  return stats.votes_received * 5 + stats.posts * 10 + stats.comments * 2;
+  return stats.votes_received * 5 + stats.posts * 10 + stats.comments * 2 + stats.lessons_done * 3;
 }
 
 export async function nextEvent(db: D1Database): Promise<EventRow | null> {

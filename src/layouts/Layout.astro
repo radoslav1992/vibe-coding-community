@@ -5,7 +5,7 @@ import '../styles/global.css';
 
 interface Props {
   title?: string;
-  active?: 'feed' | 'events' | 'news' | 'learn' | 'none';
+  active?: 'feed' | 'events' | 'news' | 'learn' | 'leaderboard' | 'none';
 }
 
 const { title = 'VibeShipyard · The global vibe coding community', active = 'none' } = Astro.props;
@@ -17,6 +17,7 @@ const navTabs = [
   { key: 'events', label: 'Events', href: '/events' },
   { key: 'news', label: 'News', href: '/news' },
   { key: 'learn', label: 'Learn', href: '/learn' },
+  { key: 'leaderboard', label: 'Leaderboard', href: '/leaderboard' },
 ];
 ---
 <!doctype html>

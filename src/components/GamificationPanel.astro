@@ -1,0 +1,39 @@
+---
+import { rankFor, computeBadges, type GamStats } from '../lib/gamification';
+
+interface Props {
+  points: number;
+  stats: GamStats;
+}
+const { points, stats } = Astro.props;
+const rank = rankFor(points);
+const badges = computeBadges(stats);
+const earned = badges.filter((b) => b.earned);
+---
+<div class="card" style="padding:20px 24px">
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px">
+    <span class="rank-chip">{rank.current.icon} {rank.current.name}</span>
+    <span style="font-size:14px;color:var(--muted);font-weight:700">{points.toLocaleString('en-US')} points</span>
+    {rank.next && (
+      <span style="font-size:13px;color:var(--faint);font-weight:600">
+        {rank.next.min - points} pts to {rank.next.icon} {rank.next.name}
+      </span>
+    )}
+  </div>
+  {rank.next && (
+    <div class="progress-bar" style="margin-bottom:16px">
+      <div class="progress-bar__fill" style={`width:${Math.round(rank.progress * 100)}%`}></div>
+    </div>
+  )}
+
+  <div class="section-label" style="margin-bottom:12px">Badges · {earned.length}/{badges.length}</div>
+  <div class="badge-grid">
+    {badges.map((b) => (
+      <div class:list={['badge-card', { 'badge-card--locked': !b.earned }]} title={b.desc}>
+        <span class="badge-card__icon">{b.icon}</span>
+        <span class="badge-card__name">{b.name}</span>
+        <span class="badge-card__desc">{b.desc}</span>
+      </div>
+    ))}
+  </div>
+</div>

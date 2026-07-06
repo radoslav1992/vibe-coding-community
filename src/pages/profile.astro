@@ -1,13 +1,20 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import GamificationPanel from '../components/GamificationPanel.astro';
 import { timeAgo, initials, avatarGradient } from '../lib/ui';
 import { userStats, userActivity, karmaPoints } from '../lib/db';
+import { gamStats, rankFor } from '../lib/gamification';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth');
 const db = Astro.locals.runtime.env.DB;
 
-const [stats, activity] = await Promise.all([userStats(db, user.id), userActivity(db, user.id)]);
+const [stats, activity, gam] = await Promise.all([
+  userStats(db, user.id),
+  userActivity(db, user.id),
+  gamStats(db, user.id),
+]);
+const rank = rankFor(karmaPoints(stats));
 
 const memberSince = new Date(user.created_at * 1000).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 const roleLabel = user.role === 'admin' ? 'Admin' : user.role === 'moderator' ? 'Moderator' : null;
@@ -21,6 +28,7 @@ const roleLabel = user.role === 'admin' ? 'Admin' : user.role === 'moderator' ? 
         <div style="font-size:14px;color:var(--muted);font-weight:600">
           @{user.username} · member since {memberSince}
           {roleLabel && <> · <span style="color:var(--accent);font-weight:800">{roleLabel}</span></>}
+          · <span title={`${karmaPoints(stats)} points`}>{rank.current.icon} {rank.current.name}</span>
         </div>
         {user.bio && <div style="font-size:14px;color:var(--body-text);margin-top:6px">{user.bio}</div>}
         <div style="font-size:13px;color:var(--faint);font-weight:600;margin-top:6px">
@@ -34,6 +42,8 @@ const roleLabel = user.role === 'admin' ? 'Admin' : user.role === 'moderator' ? 
         <div><b>{karmaPoints(stats)}</b><span>points</span></div>
       </div>
     </div>
+
+    <GamificationPanel points={karmaPoints(stats)} stats={gam} />
 
     <h2 style="margin:8px 0 0;font-size:16px;font-weight:800;color:#444">Recent activity</h2>
     <div class="card" style="overflow:hidden">
